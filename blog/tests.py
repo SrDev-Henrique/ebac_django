@@ -1,7 +1,10 @@
+from django.contrib import admin
+from django.contrib.auth import get_user_model
 from django.test import TestCase
 from django.urls import reverse
 from django.utils import timezone
 
+from .admin import PostAdmin
 from .models import Post
 
 
@@ -41,3 +44,25 @@ class PostViewTest(TestCase):
         response = self.client.get(reverse("home"))
         self.assertEqual(response.status_code, 200)
         self.assertEqual(response.content.decode(), "Hello World")
+
+
+class PostAdminTest(TestCase):
+    def test_post_is_registered_in_admin(self):
+        self.assertIn(Post, admin.site._registry)
+        self.assertIsInstance(admin.site._registry[Post], PostAdmin)
+
+    def test_post_admin_list_display(self):
+        self.assertEqual(
+            PostAdmin.list_display,
+            ("title", "author", "created_at"),
+        )
+
+    def test_admin_post_changelist_is_accessible(self):
+        user = get_user_model().objects.create_superuser(
+            username="admin",
+            email="admin@example.com",
+            password="admin123",
+        )
+        self.client.force_login(user)
+        response = self.client.get(reverse("admin:blog_post_changelist"))
+        self.assertEqual(response.status_code, 200)
