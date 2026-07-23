@@ -25,25 +25,45 @@ class PostModelTest(TestCase):
         self.assertEqual(post.title, "Primeiro post")
         self.assertEqual(post.content, "Conteúdo do post de teste")
         self.assertEqual(post.author, "Henrique")
+        self.assertEqual(post.slug, "primeiro-post")
 
-    def test_created_at_is_auto_filled(self):
-        self.assertIsNotNone(self.post.created_at)
-        self.assertLessEqual(self.post.created_at, timezone.now())
+    def test_created_on_is_auto_filled(self):
+        self.assertIsNotNone(self.post.created_on)
+        self.assertLessEqual(self.post.created_on, timezone.now())
 
     def test_str_returns_title(self):
         self.assertEqual(str(self.post), "Primeiro post")
 
 
 class PostViewTest(TestCase):
-    def test_home_returns_hello_world(self):
+    def setUp(self):
+        self.post = Post.objects.create(
+            title="Post da home",
+            content="Conteúdo completo do post usado na home e no detalhe.",
+            author="Henrique",
+        )
+
+    def test_home_uses_index_template(self):
         response = self.client.get("/home/")
         self.assertEqual(response.status_code, 200)
-        self.assertEqual(response.content.decode(), "Hello World")
+        self.assertTemplateUsed(response, "index.html")
+        self.assertTemplateUsed(response, "base.html")
+        self.assertContains(response, "Welcome to my awesome Blog")
+        self.assertContains(response, self.post.title)
 
     def test_home_url_name_resolves(self):
         response = self.client.get(reverse("home"))
         self.assertEqual(response.status_code, 200)
-        self.assertEqual(response.content.decode(), "Hello World")
+        self.assertTemplateUsed(response, "index.html")
+
+    def test_post_detail_uses_detail_template(self):
+        response = self.client.get(
+            reverse("post_detail", kwargs={"slug": self.post.slug})
+        )
+        self.assertEqual(response.status_code, 200)
+        self.assertTemplateUsed(response, "post_detail.html")
+        self.assertContains(response, self.post.title)
+        self.assertContains(response, self.post.content)
 
 
 class PostAdminTest(TestCase):
@@ -54,7 +74,7 @@ class PostAdminTest(TestCase):
     def test_post_admin_list_display(self):
         self.assertEqual(
             PostAdmin.list_display,
-            ("title", "author", "created_at"),
+            ("title", "author", "created_on"),
         )
 
     def test_admin_post_changelist_is_accessible(self):
