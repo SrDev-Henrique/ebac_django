@@ -1,4 +1,5 @@
 from django.test import TestCase
+from django.urls import reverse
 from django.utils import timezone
 
 from .models import Post
@@ -28,3 +29,15 @@ class PostModelTest(TestCase):
 
     def test_str_returns_title(self):
         self.assertEqual(str(self.post), "Primeiro post")
+
+
+class PostViewTest(TestCase):
+    def test_home_returns_hello_world(self):
+        response = self.client.get("/home/")
+        self.assertEqual(response.status_code, 200)
+        self.assertEqual(response.content.decode(), "Hello World")
+
+    def test_home_url_name_resolves(self):
+        response = self.client.get(reverse("home"))
+        self.assertEqual(response.status_code, 200)
+        self.assertEqual(response.content.decode(), "Hello World")
